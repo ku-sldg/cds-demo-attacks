@@ -175,7 +175,7 @@ manifest: cds_manifest_T = {
         (
             lambda: corrupt_component(
                 "AM.Behavior",
-                f"{AM_ROOT}/bin/attestation_manager",
+                f"{AM_ROOT}/build/bin/attestation_manager",
                 f"{BAD_FILE_DIR}/attestation_manager",
             )
         ),
@@ -189,7 +189,7 @@ manifest: cds_manifest_T = {
                 # sign it with IMA
                 print("Resigning the Attestation Manager"),
                 os.system(
-                    f"sudo evmctl ima_sign {AM_ROOT}/bin/attestation_manager -k ~/custom_ima.priv"
+                    f"sudo evmctl ima_sign {AM_ROOT}/build/bin/attestation_manager -k ~/custom_ima.priv"
                 ),
             )
         ),
