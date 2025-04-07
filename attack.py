@@ -5,13 +5,56 @@ This is a python script that will either corrupt or repair specific components o
 import argparse
 import os
 import shutil
+from typing import Any, Callable
 
 type component_T = str
 type component_path_T = str
 type good_path_T = str
 type bad_path_T = str
 type cds_manifest_T = dict[
-    component_T, tuple[component_path_T, good_path_T, bad_path_T]
+    component_T,
+    tuple[Callable[[], Any], Callable[[], Any]],
+]
+
+all_components = [
+    "Hardware.Config",
+    "Hardware.Behavior",
+    "TPM.Config",
+    "TPM.Behavior",
+    "BootLoader.Config",
+    "BootLoader.Behavior",
+    "LKIM.Config",
+    "LKIM.Behavior",
+    "Kernel.Config",
+    "Kernel.Behavior",
+    "IMA.Config",
+    "IMA.Behavior",
+    "SELinux.Config",
+    "SELinux.Behavior",
+    "AM.Conifg",
+    "AM.Behavior",
+    "ASP.Config",
+    "ASP.Behavior",
+    "CDS.Config",
+    "CDS.Behavior",
+]
+
+uncorruptible_components = [
+    "TPM.Config",
+    "BootLoader.Config",
+    "LKIM.Config",
+    "Kernel.Config",
+    "Kernel.Behavior",
+    "IMA.Config",
+    "IMA.Behavior",
+    "SELinux.Config",
+    "SELinux.Behavior",
+    "AM.Conifg",
+    "AM.Behavior",
+    "ASP.Config",
+    "ASP.Behavior",
+    "CDS.Config",
+    "CDS.Behavior",
 ]
 
 
@@ -62,21 +105,71 @@ ASP_BIN = os.environ.get("ASP_BIN")
 
 manifest: cds_manifest_T = {
     "CDS.Config": (
-        f"{DEMO_ROOT}/cds_config/rewrite_one_config.json",
-        f"{GOOD_FILE_DIR}/rewrite_one_config.json",
-        f"{BAD_FILE_DIR}/rewrite_one_config.json",
+        (
+            lambda: corrupt_component(
+                "CDS.Config",
+                f"{DEMO_ROOT}/cds_config/rewrite_one_config.json",
+                f"{BAD_FILE_DIR}/rewrite_one_config.json",
+            )
+        ),
+        (
+            lambda: repair_component(
+                "CDS.Config",
+                f"{DEMO_ROOT}/cds_config/rewrite_one_config.json",
+                f"{GOOD_FILE_DIR}/rewrite_one_config.json",
+            )
+        ),
     ),
     "CDS.Behavior": (
-        f"{DEMO_ROOT}/installed_dir/bin/rewrite_one",
-        f"{GOOD_FILE_DIR}/rewrite_one",
-        f"{BAD_FILE_DIR}/rewrite_one",
+        (
+            lambda: corrupt_component(
+                "CDS.Behavior",
+                f"{DEMO_ROOT}/installed_dir/bin/rewrite_one",
+                f"{BAD_FILE_DIR}/rewrite_one",
+            )
+        ),
+        (
+            lambda: repair_component(
+                "CDS.Behavior",
+                f"{DEMO_ROOT}/installed_dir/bin/rewrite_one",
+                f"{GOOD_FILE_DIR}/rewrite_one",
+            )
+        ),
     ),
     "ASP.Behavior": (
-        f"{ASP_BIN}/readfile",
-        f"{GOOD_FILE_DIR}/readfile",
-        f"{BAD_FILE_DIR}/readfile",
+        (
+            lambda: corrupt_component(
+                "ASP.Behavior",
+                f"{ASP_BIN}/readfile",
+                f"{BAD_FILE_DIR}/readfile",
+            )
+        ),
+        (
+            lambda: (
+                # navigate the the asp-libs directory "~/asp-libs"
+                os.chdir(
+                    os.path.join(
+                        os.path.expanduser("~"),
+                        "asp-libs",
+                    )
+                ),
+                # run the `make all` command
+                os.system("make all"),
+                # sign it with IMA
+                os.system(
+                    f"sudo evmctl ima_sign {ASP_BIN}/readfile -k ~/custom_ima.priv"
+                ),
+            )
+        ),
     ),
 }
+
+for component in all_components:
+    if component not in manifest and component not in uncorruptible_components:
+        # Here is a component that we do not manage, but also should be manageable!
+        print(
+            f"Warning: {component} is not in the manifest and is not uncorruptible. Please add it to the manifest."
+        )
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -100,9 +193,9 @@ if __name__ == "__main__":
         for comp in manifest.keys():
             print(f"  {comp}")
         exit(1)
-    (path, good_path, bad_path) = manifest[component]
+    (corrupt_fn, repair_fn) = manifest[component]
     match args.mode:
         case "corrupt":
-            corrupt_component(component, path, bad_path)
+            corrupt_fn()
         case "repair":
-            repair_component(component, path, good_path)
+            repair_fn()
