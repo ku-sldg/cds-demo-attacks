@@ -54,19 +54,21 @@ def repair_component(
 
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
-good_file_path = os.path.join(script_dir, "good_files")
-bad_file_path = os.path.join(script_dir, "bad_files")
+GOOD_FILE_DIR = os.path.join(script_dir, "good_files")
+BAD_FILE_DIR = os.path.join(script_dir, "bad_files")
+# Get the DEMO_ROOT environment variable
+DEMO_ROOT = os.environ.get("DEMO_ROOT")
 
 manifest: cds_manifest_T = {
     "CDS.Config": (
-        f"/path/to/componentA",
-        f"{good_file_path}/rewrite_one_config.json",
-        f"{bad_file_path}/rewrite_one_config.json",
+        f"{DEMO_ROOT}/cds_config/rewrite_one_config.json",
+        f"{GOOD_FILE_DIR}/rewrite_one_config.json",
+        f"{BAD_FILE_DIR}/rewrite_one_config.json",
     ),
     "CDS.Behavior": (
-        "/path/to/componentB",
-        "/path/to/good/componentB",
-        "/path/to/bad/componentB",
+        f"{DEMO_ROOT}/installed_dir/bin/rewrite_one",
+        f"{GOOD_FILE_DIR}/rewrite_one",
+        f"{BAD_FILE_DIR}/rewrite_one",
     ),
 }
 

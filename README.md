@@ -13,4 +13,4 @@ This repository exists to help enumerate the possible attacks on the CDS demo an
 | SELinux        | &check;       |              | &check;         |              |
 | AMs            | &check;       |              | &check;         |              |
 | ASPs           | &check;       |              | &check;         |              |
-| CDS Components | &check;       |              | &check;         |              |
+| CDS Components | &check;       | &check;      | &check;         | &check;      |
