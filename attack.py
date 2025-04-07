@@ -56,8 +56,9 @@ def repair_component(
 script_dir = os.path.dirname(os.path.abspath(__file__))
 GOOD_FILE_DIR = os.path.join(script_dir, "good_files")
 BAD_FILE_DIR = os.path.join(script_dir, "bad_files")
-# Get the DEMO_ROOT environment variable
+# Get some environment variables
 DEMO_ROOT = os.environ.get("DEMO_ROOT")
+ASP_BIN = os.environ.get("ASP_BIN")
 
 manifest: cds_manifest_T = {
     "CDS.Config": (
@@ -69,6 +70,11 @@ manifest: cds_manifest_T = {
         f"{DEMO_ROOT}/installed_dir/bin/rewrite_one",
         f"{GOOD_FILE_DIR}/rewrite_one",
         f"{BAD_FILE_DIR}/rewrite_one",
+    ),
+    "ASP.Behavior": (
+        f"{ASP_BIN}/readfile",
+        f"{GOOD_FILE_DIR}/readfile",
+        f"{BAD_FILE_DIR}/readfile",
     ),
 }
 
