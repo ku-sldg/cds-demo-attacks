@@ -39,7 +39,7 @@ all_components = [
     "CDS.Behavior",
 ]
 
-uncorruptible_components = [
+corruptible_components = [
     "TPM.Config",
     "BootLoader.Config",
     "LKIM.Config",
@@ -101,7 +101,14 @@ GOOD_FILE_DIR = os.path.join(script_dir, "good_files")
 BAD_FILE_DIR = os.path.join(script_dir, "bad_files")
 # Get some environment variables
 DEMO_ROOT = os.environ.get("DEMO_ROOT")
+if DEMO_ROOT is None:
+    raise Exception("DEMO_ROOT environment variable not set")
 ASP_BIN = os.environ.get("ASP_BIN")
+if ASP_BIN is None:
+    raise Exception("ASP_BIN environment variable not set")
+AM_ROOT = os.environ.get("AM_ROOT")
+if AM_ROOT is None:
+    raise Exception("AM_ROOT environment variable not set")
 
 manifest: cds_manifest_T = {
     "CDS.Config": (
@@ -164,13 +171,52 @@ manifest: cds_manifest_T = {
             )
         ),
     ),
+    "AM.Behavior": (
+        (
+            lambda: corrupt_component(
+                "AM.Behavior",
+                f"{AM_ROOT}/bin/attestation_manager",
+                f"{BAD_FILE_DIR}/attestation_manager",
+            )
+        ),
+        (
+            lambda: (
+                # navigate the the am-root directory
+                os.chdir(AM_ROOT + "/tests"),  # type: ignore
+                # run the `make all` command
+                print("Running make ci_build"),
+                os.system("make ci_build"),
+                # sign it with IMA
+                print("Resigning the Attestation Manager"),
+                os.system(
+                    f"sudo evmctl ima_sign {AM_ROOT}/bin/attestation_manager -k ~/custom_ima.priv"
+                ),
+            )
+        ),
+    ),
+    "SELinux.Config": (
+        (
+            lambda: (
+                # first we remove the selinux "demo_pipeline" module
+                os.system(f"sudo semodule --remove=demo_pipeline"),
+            )
+        ),
+        (
+            lambda: (
+                # first navigate to the folder where the policy was
+                os.chdir(DEMO_ROOT + "/selinux_policy"),  # type: ignore
+                # then we load the module
+                os.system(f"sudo semodule --install demo_pipeline.pp"),
+            )
+        ),
+    ),
 }
 
-for component in all_components:
-    if component not in manifest and component not in uncorruptible_components:
+for component in corruptible_components:
+    if component not in manifest:
         # Here is a component that we do not manage, but also should be manageable!
         print(
-            f"Warning: {component} is not in the manifest and is not uncorruptible. Please add it to the manifest."
+            f"Warning: {component} is not in the manifest and is corruptible. Please add an attack for it to the manifest."
         )
 
 if __name__ == "__main__":
