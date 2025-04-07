@@ -154,8 +154,10 @@ manifest: cds_manifest_T = {
                     )
                 ),
                 # run the `make all` command
+                print("Running make all"),
                 os.system("make all"),
                 # sign it with IMA
+                print("Resigning the ASP"),
                 os.system(
                     f"sudo evmctl ima_sign {ASP_BIN}/readfile -k ~/custom_ima.priv"
                 ),
